@@ -1,0 +1,92 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #0059ff;
+    color: white;
+    text-align: center;
+}
+
+.game-container {
+    margin-top: 50px;
+}
+
+.maps {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.map {
+    width: 300px;
+    height: 300px;
+    border: 2px solid white;
+    background-color: #1f1f1f;
+    display: grid;
+    grid-template-columns: repeat(10, 30px);
+    grid-template-rows: repeat(10, 30px);
+    gap: 5px;
+    padding: 10px;
+}
+
+.menu{
+    width: 300px;
+    height: 300px;
+    border: 2px solid white;
+    background-color: #1f1f1f;
+    display: grid;
+    grid-template-columns: repeat(10, 30px);
+    grid-template-rows: repeat(10, 30px);
+    gap: 1px;
+    margin-left: 30%;
+
+    
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(10, 30px);
+    grid-template-rows: repeat(10, 30px);
+}
+
+.grid div {
+    width: 30px;
+    height: 30px;
+    background-color: #444;
+    border: 1px solid #333;
+    position: relative;
+}
+
+.ship {
+    background-color: blue;
+    transition: opacity 0.5s;
+}
+
+.ship.ready {
+    opacity: 0.5;
+}
+
+.hit {
+    background-color: red !important;
+}
+
+.miss {
+    background-color: gray !important;
+}
+
+#controls {
+    margin-top: 20px;
+}
+
+button {
+    margin: 5px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}

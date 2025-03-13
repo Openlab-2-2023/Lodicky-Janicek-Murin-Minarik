@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lodičky - Hra</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <b><h1>Lodičky</h1></b>  
+        <div class="maps">
+            
+            <div id="player1Map" class="map">
+                <div class="grid" id="player1Grid"></div>
+            </div>
+            <div id="player2Map" class="map">
+                <div class="grid" id="player2Grid"></div>
+            </div>
+           
+            <div id="player2Map" class="menu">
+                <b><h1>Menu:</h1></b> 
+                <div class="grid" id="player2Grid"></div>
+            </div>
+
+        </div>
+        <div id="controls">
+            <button id="readyButton">Pripravený</button>
+            <button id="startGame">Štart</button>
+            <button id="restartGame">Reštart</button>
+        </div>
+        <div id="scoreboard">
+            <p id="score">Skóre: 0</p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
