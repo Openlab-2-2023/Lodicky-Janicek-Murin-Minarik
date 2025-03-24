@@ -9,30 +9,29 @@
 <body>
     
     <div class="game-container">
+        <div class="full">
         <h1 class="battleship-title">BATTLESHIP</h1>
-        <div id="controls">
-            <button id="startGame">Štart</button>
-            <button id="restartGame">Reštart</button>
-        </div>  
+        
+        
         <div id="scoreboard">
             <p id="score">Skóre: 0</p>
         </div>
         <div class="maps">
             <div class="map-container">
-                <h3>PC</h3> 
+                <h3>JA</h3> 
                 <div id="pcMap" class="map">
                     <div class="grid" id="pcGrid"></div>
                 </div> 
             </div>
       
             <div class="map-container">
-                <h3>JA</h3> 
+                <h3>PC</h3> 
                 <div id="playerMap" class="map">
                     <div class="grid" id="playerGrid"></div>
                 </div>
             </div>
         </div>
-        
+      
         
         <div class="menu">
             <div id="shipMenu" class="menu-block">
@@ -40,27 +39,41 @@
                 <div class="grid" id="player2Grid"></div>
             </div>
         </div>
+
+    </div>
         
-        <div class="pokyny">
-            <h1>Pokyny</h1>
-            <p>za urcite body mas niaku schopnost</p>
-            <td>   <ul>
-            <li>Za 5 bodov mas strelu 3x3</li>
-            <li>za 10 bodov mas strelu cely riadok</li>
-            <li>za 15 bodov mas strelu priecne cez tabulku</li>
-            <li>Kazdych dalsich 5 bodov sa to opakuje</li>
-            </ul>
-        </td>
-         
-            <p>Mozes si vybrat obtiaznost</p>
-            <td>    <ul>
-                <li>easy</li>
-                <li>medium</li>
-                <li>hard</li>
-            </ul>
-        </td>
+
+
         
-        </div>
+           
+                <div id="pokyn" class="pokyny-block">
+                    <div class="pokyny">
+                        <h1>Pokyny</h1>
+                         <div id="controls">
+            <button id="startGame">Štart</button>
+            <button id="restartGame">Reštart</button>
+       
+                        <h4>Schopnost:</h4>
+                    <td>   
+                        <ul>
+                        <li>Za 5 bodov mas strelu 3x3</li>
+                        <li>Za 10 bodov mas strelu cely riadok</li>
+                        <li>Za 15 bodov mas strelu priecne tabulkou</li>
+                        <li>Kazdych dalsich 5 bodov sa to opakuje</li>
+                        </ul>
+                    </td>
+                     
+                        <h4>Mozes si vybrat obtiaznost:</h4>
+                    <div class="obtiaznost">
+                    <button>EASY</button>
+                    <button>MEDIUM</button>
+                    <button>HARD</button>
+                    </div>
+                    </div>
+                    
+                </div>
+            </div>
+        
         
     </div>
     <script src="script.js"></script>

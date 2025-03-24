@@ -19,12 +19,9 @@ body {
     font-size: 60px;
     font-weight: bold;
     text-transform: uppercase;
-    text-align: center;
     color: white;
-    text-shadow: 4px 4px 0px #000, 
-                 6px 6px 5px rgba(0, 0, 0, 0.5),
-                 0 0 20px #00bfff; 
-    letter-spacing: 5px; /*medzera medzi pismenamy*/
+    text-shadow: 4px 4px 0px #000, 6px 6px 5px rgba(0, 0, 0, 0.5), 0 0 20px #00bfff;
+    letter-spacing: 5px;
     padding: 20px;
     background: linear-gradient(to right, #003366, #0055a5);
     border-radius: 10px;
@@ -32,23 +29,30 @@ body {
     box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.5);
 }
 
-
+#scoreboard {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 20px;
+    font-weight: bold;
+}
 
 .maps {
     display: flex;
-    justify-content: center; /* Zarovná herné polia do stredu */
-    gap: 100px; /* Väčšia medzera medzi mapami */
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
     margin-top: 20px;
 }
 
 .map-container {
-    text-align: center; /* Zarovná nadpisy a tabuľky do stredu */
+    text-align: center;
 }
 
 h3 {
-    margin-bottom: 10px; /* Pridá priestor medzi textom a tabuľkou */
+    margin-bottom: 10px;
     font-size: 20px;
-    color: #ffffff; /* Čierna farba textu */
+    color: #ffffff;
 }
 
 .map {
@@ -56,6 +60,7 @@ h3 {
     padding: 10px;
     background-color: #f0f8ff;
     border-radius: 10px;
+    
 }
 
 .grid {
@@ -65,50 +70,110 @@ h3 {
     gap: 2px;
 }
 
-
-
-
-
-
 .grid div {
     width: 30px;
     height: 30px;
     background-color: #444;
     border: 1px solid #333;
-    position: relative;
 }
 
+.menu, .pokyny-block {
+    position: absolute;
+    top: 150px;
+    padding: 10px;
+    height: 500px;
+}
 
 .menu {
-    display: flex;
-    justify-content: center;
-    margin-top: 30px;
-    }
+    left: 0;
+}
 
-.menu-block {
-    background-color: rgba(0, 0, 50, 0.8);
+.pokyny-block {
+    right: 0;
+}
+
+.menu-block, .pokyny-block {
+    background-color: #0c007d;
     padding: 20px;
     border-radius: 10px;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    width: 100%;
     text-align: center;
-    width: 600px;
+}
+.pokyny-block{
+    margin-left: 10px;
 }
 
-h3 {
+.pokyny h1 {
+    font-size: 32px;
+    color: #ffffff;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.pokyny ul {
+    list-style: none;
+    padding: 0;
+}
+
+.pokyny li {
+    background: #007bff;
     color: white;
-    margin-bottom: 10px;
-    font-size: 20px;
+    padding: 12px 20px;
+    margin: 6px 0;
+    border-radius: 8px;
+    transition: 0.3s;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: left;
 }
 
-.grid {
-    display: grid;
-    grid-template-columns: repeat(5, 40px);
-    grid-template-rows: repeat(5, 40px);
-    gap: 5px;
+.pokyny li:hover {
+    background: #0056b3;
+    transform: scale(1.05);
+    cursor: pointer;
 }
 
-ul {
-    list-style-type: circle;
+button {
+    margin: 5px;
+    padding: 10px 20px;
+    background-color: #0069da;
+    color: white;
+    cursor: pointer;
+    width: 150px;
+    border-radius: 8px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.obtiaznost {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.obtiaznost button {
+    background: #28a745;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    min-width: 100px;
+    text-transform: uppercase;
+}
+
+.obtiaznost button:hover {
+    background: #218838;
+    transform: scale(1.1);
 }
 
 .cell {
@@ -127,8 +192,6 @@ ul {
     background-color: green;
 }
 
-
-
 .ship {
     background-color: blue;
     transition: opacity 0.5s;
@@ -139,27 +202,9 @@ ul {
 }
 
 .hit {
-    background-color: red !important;
+    background-color: red ;
 }
 
 .miss {
-    background-color: gray !important;
-}
-
-#controls {
-
-    flex-direction: column; 
-    align-items:center; 
-    gap: 10px; 
-    padding: 20px; 
-    
-}
-
-button {
-    margin: 5px;
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    cursor: pointer;
-    width: 120px;
+    background-color: gray ;
 }
