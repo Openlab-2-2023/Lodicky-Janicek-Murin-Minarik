@@ -39,20 +39,17 @@ body {
 
 .maps {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
+    flex-direction: row; 
+    justify-content: flex-end; 
+    align-items: flex-start;
+    gap: 20px; 
     margin-top: 20px;
+    padding-right: 20px; 
 }
 
 .map-container {
     text-align: center;
-}
-
-h3 {
-    margin-bottom: 10px;
-    font-size: 20px;
-    color: #ffffff;
+    width: auto; 
 }
 
 .map {
@@ -60,7 +57,6 @@ h3 {
     padding: 10px;
     background-color: #f0f8ff;
     border-radius: 10px;
-    
 }
 
 .grid {
@@ -77,19 +73,17 @@ h3 {
     border: 1px solid #333;
 }
 
-.menu, .pokyny-block {
+#pokyn.pokyny-block {
     position: absolute;
-    top: 150px;
-    padding: 10px;
-    height: 500px;
-}
-
-.menu {
-    left: 0;
-}
-
-.pokyny-block {
-    right: 0;
+    top: 120px;
+    left: 20px;
+    background-color: #0c007d;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 500px; 
+    height: 600px; 
+    text-align: center;
 }
 
 .menu-block, .pokyny-block {
@@ -100,9 +94,6 @@ h3 {
     max-width: 500px;
     width: 100%;
     text-align: center;
-}
-.pokyny-block{
-    margin-left: 10px;
 }
 
 .pokyny h1 {
@@ -152,7 +143,6 @@ button:hover {
 }
 
 .obtiaznost {
-    margin-top: 20px;
     display: flex;
     justify-content: center;
     gap: 10px;
@@ -176,35 +166,23 @@ button:hover {
     transform: scale(1.1);
 }
 
-.cell {
-    width: 40px;
-    height: 40px;
-    background-color: #1E90FF;
-    border: 1px solid #000;
-    cursor: pointer;
+#pokyn.pokyny-block {
+    position: absolute;
+    top: 120px;
+    left: 20px;
+    background-color: #0c007d;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 550px; 
+    height: 700px; 
+    text-align: center;
 }
 
-.cell.ship {
-    background-color: gray;
+.grid {
+    display: grid;
+    grid-template-columns: repeat(10, 40px);
+    grid-template-rows: repeat(10, 40px);
+    gap: 5px; 
 }
 
-.cell.selected {
-    background-color: green;
-}
-
-.ship {
-    background-color: blue;
-    transition: opacity 0.5s;
-}
-
-.ship.ready {
-    opacity: 0.5;
-}
-
-.hit {
-    background-color: red ;
-}
-
-.miss {
-    background-color: gray ;
-}

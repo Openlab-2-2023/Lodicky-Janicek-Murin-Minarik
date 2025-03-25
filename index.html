@@ -10,72 +10,60 @@
     
     <div class="game-container">
         <div class="full">
-        <h1 class="battleship-title">BATTLESHIP</h1>
-        
-        
-        <div id="scoreboard">
-            <p id="score">Skóre: 0</p>
-        </div>
-        <div class="maps">
-            <div class="map-container">
-                <h3>JA</h3> 
-                <div id="pcMap" class="map">
-                    <div class="grid" id="pcGrid"></div>
-                </div> 
+            <h1 class="battleship-title">BATTLESHIP</h1>
+            
+            <div id="scoreboard">
+                <p id="score">Body: 0</p>
             </div>
-      
-            <div class="map-container">
-                <h3>PC</h3> 
-                <div id="playerMap" class="map">
-                    <div class="grid" id="playerGrid"></div>
+
+            <div class="maps">
+                <div class="map-container">
+                    <h3>JA</h3> 
+                    <div id="pcMap" class="map">
+                        <div class="grid" id="pcGrid"></div>
+                    </div> 
+                </div>
+                <div class="map-container">
+                    <h3>PC</h3> 
+                    <div id="playerMap" class="map">
+                        <div class="grid" id="playerGrid"></div>
+                    </div>
                 </div>
             </div>
-        </div>
-      
-        
-        <div class="menu">
-            <div id="shipMenu" class="menu-block">
-                <h3>Výber lodí</h3>
-                <div class="grid" id="player2Grid"></div>
-            </div>
-        </div>
-
-    </div>
-        
-
-
-        
-           
-                <div id="pokyn" class="pokyny-block">
-                    <div class="pokyny">
-                        <h1>Pokyny</h1>
-                         <div id="controls">
-            <button id="startGame">Štart</button>
-            <button id="restartGame">Reštart</button>
-       
-                        <h4>Schopnost:</h4>
-                    <td>   
-                        <ul>
-                        <li>Za 5 bodov mas strelu 3x3</li>
-                        <li>Za 10 bodov mas strelu cely riadok</li>
-                        <li>Za 15 bodov mas strelu priecne tabulkou</li>
-                        <li>Kazdych dalsich 5 bodov sa to opakuje</li>
-                        </ul>
-                    </td>
-                     
-                        <h4>Mozes si vybrat obtiaznost:</h4>
-                    <div class="obtiaznost">
-                    <button>EASY</button>
-                    <button>MEDIUM</button>
-                    <button>HARD</button>
-                    </div>
+            
+            
+            <div id="pokyn" class="pokyny-block">
+                <div class="pokyny">
+                    <h1>Pokyny</h1>
+                    <div id="controls">
+                        <button id="startGame">Štart</button>
+                        <button id="restartGame">Reštart</button>
                     </div>
                     
+                    <h4>Schopnosť:</h4>
+                    <ul>
+                        <li>Za 5 bodov máš na strelu 3x3</li>
+                        <li>Za 10 bodov máš strelu cez celý riadok</li>
+                        <li>Za 10 bodov máš strelu cez celý stĺpec</li>
+                        <li>Za 15 bodov máš strelu priečne tabuľkou</li>
+                        <li>Za 150 bodov máš strelu na celú tabuľku</li>
+                    </ul>
+                    
+                    <h4>Môžeš si vybrať obtiažnosť:</h4>
+                    <div class="obtiaznost">
+                        <button>EASY</button>
+                        <button>MEDIUM</button>
+                        <button>HARD</button>
+                    </div>
+                    
+                  
+                    <h3>Výber lodí:</h3>
+                    <div class="grid" id="player2Grid"></div>
                 </div>
             </div>
-        
-        
+        </div>
     </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
