@@ -168,14 +168,14 @@ button:hover {
 
 #pokyn.pokyny-block {
     position: absolute;
-    top: 120px;
+    top: 200px;
     left: 20px;
     background-color: #0c007d;
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 550px; 
-    height: 700px; 
+    width: 500px; 
+    height: 470px; 
     text-align: center;
 }
 
@@ -183,7 +183,7 @@ button:hover {
     display: grid;
     grid-template-columns: repeat(10, 40px);
     grid-template-rows: repeat(10, 40px);
-    gap: 5px; 
+    gap: 5px;
 }
 
 .tab-interface {
@@ -192,7 +192,9 @@ button:hover {
 
 .tab-buttons {
     display: flex;
+    justify-content: center; 
     margin-bottom: 10px;
+    width: 100%; 
 }
 
 .tab-button {
@@ -206,6 +208,14 @@ button:hover {
     border-radius: 5px 5px 0 0;
     margin-right: 5px;
     transition: all 0.3s;
+   
+}
+
+
+.tab-button {
+    flex: 1; 
+    max-width: 200px; 
+    text-align: center; 
 }
 
 .tab-button:hover {

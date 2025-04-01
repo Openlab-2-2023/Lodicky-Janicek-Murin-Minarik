@@ -11,7 +11,7 @@ let computerShips = [];
 let gameStarted = false;
 let shipSizes = [2, 3, 3, 4, 4];
 let playerTurn = true;
-let score = 0;
+let body = 0;
 let placingShipIndex = null;
 
 function createGrid(gridElement, isPlayer) {
@@ -69,6 +69,20 @@ function placeShip(square) {
     placingShipIndex = null;
 }
 
+function openTab(tabName) {
+    const tabContents = document.getElementsByClassName("tab-content");
+    for (let i = 0; i < tabContents.length; i++) {
+        tabContents[i].classList.remove("active");
+    }
+    
+    const tabButtons = document.getElementsByClassName("tab-button");
+    for (let i = 0; i < tabButtons.length; i++) {
+        tabButtons[i].classList.remove("active");
+    }
+    
+    document.getElementById(tabName).classList.add("active");
+    event.currentTarget.classList.add("active");
+}
 function playerShoot(square) {
     if (!gameStarted || !playerTurn) return;
     let index = parseInt(square.dataset.index);
@@ -80,7 +94,7 @@ function playerShoot(square) {
     } else {
         square.classList.add("miss");
     }
-    scoreBoard.textContent = `Skóre: ${score}`;
+    scoreBoardBoard.textContent = `Body: ${score}`;
     playerTurn = false;
     setTimeout(computerShoot, 1000);
 }
@@ -122,7 +136,20 @@ createGrid(playerGrid, true);
 createGrid(pcGrid, false);
 createShipSelection();
 
-
+function openTab(tabName) {
+    const tabContents = document.getElementsByClassName("tab-content");
+    for (let i = 0; i < tabContents.length; i++) {
+        tabContents[i].classList.remove("active");
+    }
+    
+    const tabButtons = document.getElementsByClassName("tab-button");
+    for (let i = 0; i < tabButtons.length; i++) {
+        tabButtons[i].classList.remove("active");
+    }
+    
+    document.getElementById(tabName).classList.add("active");
+    event.currentTarget.classList.add("active");
+}
 
 
 
