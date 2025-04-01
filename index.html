@@ -31,39 +31,61 @@
                 </div>
             </div>
             
-            
             <div id="pokyn" class="pokyny-block">
                 <div class="pokyny">
-                    <h1>Pokyny</h1>
-                    <div id="controls">
+                    <div class="tab-interface">
+                        <div class="tab-buttons">
+                            <button class="tab-button active" onclick="openTab('schopnosti')">Schopnosti</button>
+                            <button class="tab-button" onclick="openTab('nastavenia')">Nastavenia</button>
+                        </div>
+                        
+                        <div id="schopnosti" class="tab-content active">
+                            <h4>Schopnosť:</h4>
+                            <ul>
+                                <li>Za 5 bodov máš na strelu 3x3</li>
+                                <li>Za 10 bodov máš strelu cez celý riadok</li>
+                                <li>Za 10 bodov máš strelu cez celý stĺpec</li>
+                                <li>Za 15 bodov máš strelu priečne tabuľkou</li>
+                                <li>Za 150 bodov máš strelu na celú tabuľku</li>
+                            </ul>
+                        </div>
+                        
+                        <div id="nastavenia" class="tab-content">
+                            <div id="controls">
                         <button id="startGame">Štart</button>
                         <button id="restartGame">Reštart</button>
+                            </div>
+                            <h4>Môžeš si vybrať obtiažnosť:</h4>
+                            <div class="obtiaznost">
+                                <button>EASY</button>
+                                <button>MEDIUM</button>
+                                <button>HARD</button>
+                            </div>
+                            <h3>Výber lodí:</h3>
+                            <div class="grid" id="player2Grid"></div>
+                        </div>
                     </div>
-                    
-                    <h4>Schopnosť:</h4>
-                    <ul>
-                        <li>Za 5 bodov máš na strelu 3x3</li>
-                        <li>Za 10 bodov máš strelu cez celý riadok</li>
-                        <li>Za 10 bodov máš strelu cez celý stĺpec</li>
-                        <li>Za 15 bodov máš strelu priečne tabuľkou</li>
-                        <li>Za 150 bodov máš strelu na celú tabuľku</li>
-                    </ul>
-                    
-                    <h4>Môžeš si vybrať obtiažnosť:</h4>
-                    <div class="obtiaznost">
-                        <button>EASY</button>
-                        <button>MEDIUM</button>
-                        <button>HARD</button>
-                    </div>
-                    
-                  
-                    <h3>Výber lodí:</h3>
-                    <div class="grid" id="player2Grid"></div>
                 </div>
             </div>
         </div>
     </div>
     
+    <script>
+        function openTab(tabName) {
+            const tabContents = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            
+            const tabButtons = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove("active");
+            }
+            
+            document.getElementById(tabName).classList.add("active");
+            event.currentTarget.classList.add("active");
+        }
+    </script>
     <script src="script.js"></script>
 </body>
 </html>
