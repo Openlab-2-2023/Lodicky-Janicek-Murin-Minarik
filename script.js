@@ -1,29 +1,36 @@
-
-
 let playerGrid = document.getElementById("playerGrid");
 let pcGrid = document.getElementById("pcGrid");
 let player2Grid = document.getElementById("player2Grid");
 let startGameButton = document.getElementById("startGame");
 let restartGameButton = document.getElementById("restartGame");
 let scoreBoard = document.getElementById("score");
+let rotateShipButton = document.getElementById("rotateShip");
+
 let playerShips = [];
-let computerShips = [];
-let gameStarted = false;
+let placedShips = [];
 let shipSizes = [2, 3, 3, 4, 4];
+let gameStarted = false;
+let score = 0;
 let playerTurn = true;
-let body = 0;
-let placingShipIndex = null;
+let currentShipIndex = 0;
 
 function createGrid(gridElement, isPlayer) {
     gridElement.innerHTML = "";
     for (let i = 0; i < 100; i++) {
         let square = document.createElement("div");
         square.dataset.index = i;
-        if (!isPlayer) {
-            square.addEventListener("click", () => playerShoot(square));
+
+        if (isPlayer) {
+            square.addEventListener("dragover", (e) => e.preventDefault());
+            square.addEventListener("drop", (e) => {
+                e.preventDefault();
+                const shipIndex = parseInt(e.dataTransfer.getData("text/plain"));
+                placeShip(square, shipIndex);
+            });
         } else {
-            square.addEventListener("click", () => placeShip(square));
+            square.addEventListener("click", () => playerShoot(square));
         }
+
         gridElement.appendChild(square);
     }
 }
@@ -33,56 +40,49 @@ function createShipSelection() {
     shipSizes.forEach((size, index) => {
         let ship = document.createElement("div");
         ship.classList.add("ship-selection");
+        ship.setAttribute("draggable", "true");
         ship.dataset.size = size;
         ship.dataset.index = index;
+
         for (let i = 0; i < size; i++) {
             let cell = document.createElement("div");
             cell.classList.add("ship-cell");
-            cell.style.backgroundColor = "green";
             ship.appendChild(cell);
         }
-        ship.addEventListener("click", () => selectShip(index));
+
+        ship.addEventListener("dragstart", (e) => {
+            e.dataTransfer.setData("text/plain", index);
+            currentShipIndex = index;
+        });
+
         player2Grid.appendChild(ship);
     });
 }
 
-function selectShip(index) {
-    placingShipIndex = index;
-}
+function placeShip(square, shipIndex) {
+    if (gameStarted || placedShips.includes(shipIndex)) return;
 
-function placeShip(square) {
-    if (gameStarted || placingShipIndex === null) return;
+    let size = shipSizes[shipIndex];
     let index = parseInt(square.dataset.index);
-    let size = shipSizes[placingShipIndex];
-    let shipPlaced = [];
+    let shipCells = [];
     
     for (let i = 0; i < size; i++) {
         let position = index + i;
         if (position % 10 < index % 10) return;
         let cell = playerGrid.children[position];
         if (!cell || cell.classList.contains("ship")) return;
-        shipPlaced.push(cell);
+        shipCells.push(cell);
     }
-    
-    shipPlaced.forEach(cell => cell.classList.add("ship"));
-    playerShips.push(...shipPlaced);
-    placingShipIndex = null;
+
+    shipCells.forEach(cell => cell.classList.add("ship"));
+    placedShips.push(shipIndex);
 }
 
-function openTab(tabName) {
-    const tabContents = document.getElementsByClassName("tab-content");
-    for (let i = 0; i < tabContents.length; i++) {
-        tabContents[i].classList.remove("active");
-    }
-    
-    const tabButtons = document.getElementsByClassName("tab-button");
-    for (let i = 0; i < tabButtons.length; i++) {
-        tabButtons[i].classList.remove("active");
-    }
-    
-    document.getElementById(tabName).classList.add("active");
-    event.currentTarget.classList.add("active");
+function rotateShip() {
+    let ship = player2Grid.children[currentShipIndex];
+    ship.classList.toggle("rotate");
 }
+
 function playerShoot(square) {
     if (!gameStarted || !playerTurn) return;
     let index = parseInt(square.dataset.index);
@@ -94,7 +94,8 @@ function playerShoot(square) {
     } else {
         square.classList.add("miss");
     }
-    scoreBoardBoard.textContent = `Body: ${score}`;
+
+    scoreBoard.textContent = `Body: ${score}`;
     playerTurn = false;
     setTimeout(computerShoot, 1000);
 }
@@ -110,6 +111,7 @@ function computerShoot() {
     } else {
         randomShot.classList.add("miss");
     }
+
     playerTurn = true;
 }
 
@@ -120,44 +122,29 @@ startGameButton.addEventListener("click", () => {
 
 restartGameButton.addEventListener("click", () => {
     gameStarted = false;
-    playerShips = [];
-    computerShips = [];
+    placedShips = [];
     score = 0;
-    placingShipIndex = null;
     playerTurn = true;
     createGrid(playerGrid, true);
     createGrid(pcGrid, false);
     createShipSelection();
-    scoreBoard.textContent = "Skóre: 0";
+    scoreBoard.textContent = "Body: 0";
     startGameButton.disabled = false;
 });
 
-createGrid(playerGrid, true);
-createGrid(pcGrid, false);
-createShipSelection();
-
 function openTab(tabName) {
     const tabContents = document.getElementsByClassName("tab-content");
+    const tabButtons = document.getElementsByClassName("tab-button");
+
     for (let i = 0; i < tabContents.length; i++) {
         tabContents[i].classList.remove("active");
-    }
-    
-    const tabButtons = document.getElementsByClassName("tab-button");
-    for (let i = 0; i < tabButtons.length; i++) {
         tabButtons[i].classList.remove("active");
     }
-    
+
     document.getElementById(tabName).classList.add("active");
     event.currentTarget.classList.add("active");
 }
 
-
-
-
-
-
-
-
-
-
-
+createGrid(playerGrid, true);
+createGrid(pcGrid, false);
+createShipSelection();
