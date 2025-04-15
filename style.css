@@ -252,3 +252,7 @@ button:hover {
 .grid div.ship {
     background-color: green !important;
 }
+.ship-selection.rotate {
+    transform: rotate(90deg);
+    transform-origin: top left;
+}
