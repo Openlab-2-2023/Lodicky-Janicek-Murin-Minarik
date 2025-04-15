@@ -148,3 +148,41 @@ function openTab(tabName) {
 createGrid(playerGrid, true);
 createGrid(pcGrid, false);
 createShipSelection();
+
+let isVertical = false;
+let rotateDirectionButton = document.getElementById("rotateDirection");
+
+rotateDirectionButton.addEventListener("click", () => {
+    isVertical = !isVertical;
+    rotateDirectionButton.textContent = isVertical ? "Smer: →" : "Smer: ↓";
+});
+
+function placeShip(square, shipIndex) {
+    if (gameStarted || placedShips.includes(shipIndex)) return;
+
+    let size = shipSizes[shipIndex];
+    let index = parseInt(square.dataset.index);
+    let shipCells = [];
+
+    for (let i = 0; i < size; i++) {
+        let position = isVertical ? index + i * 10 : index + i;
+
+        if (position >= 100) return;
+
+        if (!isVertical && Math.floor(position / 10) !== Math.floor(index / 10)) return;
+
+        let cell = playerGrid.children[position];
+        if (!cell || cell.classList.contains("ship")) return;
+        shipCells.push(cell);
+    }
+
+    shipCells.forEach(cell => cell.classList.add("ship"));
+    placedShips.push(shipIndex);
+}
+[...player2Grid.children].forEach(ship => {
+    if (isVertical) {
+        ship.classList.add("rotate");
+    } else {
+        ship.classList.remove("rotate");
+    }
+});
