@@ -153,7 +153,9 @@ function computerShoot() {
 startGameButton.addEventListener("click", () => {
     gameStarted = true;
     startGameButton.disabled = true;
+    generateComputerShips(); // <- Dôležité
 });
+
 
 restartGameButton.addEventListener("click", () => {
     gameStarted = false;
@@ -185,3 +187,62 @@ createGrid(pcGrid, false);
 createShipSelection();
 
 let computerShips = [];
+
+
+
+function generateComputerShips() {
+    computerShips = [];
+    let usedIndexes = new Set();
+
+    for (let size of shipSizes) {
+        let placed = false;
+
+        while (!placed) {
+            let direction = directions[Math.floor(Math.random() * directions.length)];
+            let index = Math.floor(Math.random() * 100);
+            let positions = [];
+            let valid = true;
+
+            for (let i = 0; i < size; i++) {
+                let pos;
+                let row = Math.floor(index / 10);
+                let col = index % 10;
+
+                switch (direction) {
+                    case "right":
+                        pos = index + i;
+                        if (Math.floor(pos / 10) !== row) valid = false;
+                        break;
+                    case "down":
+                        pos = index + i * 10;
+                        if (pos >= 100) valid = false;
+                        break;
+                    case "left":
+                        pos = index - i;
+                        if (pos < 0 || Math.floor(pos / 10) !== row) valid = false;
+                        break;
+                    case "up":
+                        pos = index - i * 10;
+                        if (pos < 0) valid = false;
+                        break;
+                }
+
+                if (!valid || usedIndexes.has(pos)) {
+                    valid = false;
+                    break;
+                }
+
+                positions.push(pos);
+            }
+
+            if (valid) {
+                positions.forEach(pos => {
+                    usedIndexes.add(pos);
+                    computerShips.push(pos);
+                    pcGrid.children[pos].classList.add("ship");  //ak chcem aby lod neboli vydno tak pred riadok kodu dat toto => //
+                });
+                placed = true;
+            }
+        }
+    }
+}
