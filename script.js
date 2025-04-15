@@ -4,7 +4,6 @@ let player2Grid = document.getElementById("player2Grid");
 let startGameButton = document.getElementById("startGame");
 let restartGameButton = document.getElementById("restartGame");
 let scoreBoard = document.getElementById("score");
-let rotateShipButton = document.getElementById("rotateShip");
 
 let playerShips = [];
 let placedShips = [];
@@ -13,6 +12,26 @@ let gameStarted = false;
 let score = 0;
 let playerTurn = true;
 let currentShipIndex = 0;
+
+let directions = ["right", "down", "left", "up"];
+let currentDirectionIndex = 0;
+
+let rotateDirectionButton = document.getElementById("rotateDirection");
+rotateDirectionButton.addEventListener("click", () => {
+    currentDirectionIndex = (currentDirectionIndex + 1) % directions.length;
+    let dirText = {
+        right: "→",
+        down: "↓",
+        left: "←",
+        up: "↑"
+    };
+    rotateDirectionButton.textContent = `Smer: ${dirText[directions[currentDirectionIndex]]}`;
+
+    [...player2Grid.children].forEach(ship => {
+        ship.classList.remove("rotate-right", "rotate-down", "rotate-left", "rotate-up");
+        ship.classList.add(`rotate-${directions[currentDirectionIndex]}`);
+    });
+});
 
 function createGrid(gridElement, isPlayer) {
     gridElement.innerHTML = "";
@@ -39,7 +58,7 @@ function createShipSelection() {
     player2Grid.innerHTML = "";
     shipSizes.forEach((size, index) => {
         let ship = document.createElement("div");
-        ship.classList.add("ship-selection");
+        ship.classList.add("ship-selection", `rotate-${directions[currentDirectionIndex]}`);
         ship.setAttribute("draggable", "true");
         ship.dataset.size = size;
         ship.dataset.index = index;
@@ -65,10 +84,31 @@ function placeShip(square, shipIndex) {
     let size = shipSizes[shipIndex];
     let index = parseInt(square.dataset.index);
     let shipCells = [];
-    
+
     for (let i = 0; i < size; i++) {
-        let position = index + i;
-        if (position % 10 < index % 10) return;
+        let position;
+        let row = Math.floor(index / 10);
+        let col = index % 10;
+
+        switch (directions[currentDirectionIndex]) {
+            case "right":
+                position = index + i;
+                if (Math.floor(position / 10) !== row) return;
+                break;
+            case "down":
+                position = index + i * 10;
+                if (position >= 100) return;
+                break;
+            case "left":
+                position = index - i;
+                if (position < 0 || Math.floor(position / 10) !== row) return;
+                break;
+            case "up":
+                position = index - i * 10;
+                if (position < 0) return;
+                break;
+        }
+
         let cell = playerGrid.children[position];
         if (!cell || cell.classList.contains("ship")) return;
         shipCells.push(cell);
@@ -76,11 +116,6 @@ function placeShip(square, shipIndex) {
 
     shipCells.forEach(cell => cell.classList.add("ship"));
     placedShips.push(shipIndex);
-}
-
-function rotateShip() {
-    let ship = player2Grid.children[currentShipIndex];
-    ship.classList.toggle("rotate");
 }
 
 function playerShoot(square) {
@@ -149,40 +184,4 @@ createGrid(playerGrid, true);
 createGrid(pcGrid, false);
 createShipSelection();
 
-let isVertical = false;
-let rotateDirectionButton = document.getElementById("rotateDirection");
-
-rotateDirectionButton.addEventListener("click", () => {
-    isVertical = !isVertical;
-    rotateDirectionButton.textContent = isVertical ? "Smer: →" : "Smer: ↓";
-});
-
-function placeShip(square, shipIndex) {
-    if (gameStarted || placedShips.includes(shipIndex)) return;
-
-    let size = shipSizes[shipIndex];
-    let index = parseInt(square.dataset.index);
-    let shipCells = [];
-
-    for (let i = 0; i < size; i++) {
-        let position = isVertical ? index + i * 10 : index + i;
-
-        if (position >= 100) return;
-
-        if (!isVertical && Math.floor(position / 10) !== Math.floor(index / 10)) return;
-
-        let cell = playerGrid.children[position];
-        if (!cell || cell.classList.contains("ship")) return;
-        shipCells.push(cell);
-    }
-
-    shipCells.forEach(cell => cell.classList.add("ship"));
-    placedShips.push(shipIndex);
-}
-[...player2Grid.children].forEach(ship => {
-    if (isVertical) {
-        ship.classList.add("rotate");
-    } else {
-        ship.classList.remove("rotate");
-    }
-});
+let computerShips = [];
