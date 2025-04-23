@@ -1,4 +1,3 @@
-
 let playerGrid = document.getElementById("playerGrid");
 let pcGrid = document.getElementById("pcGrid");
 let player2Grid = document.getElementById("player2Grid");
@@ -154,7 +153,7 @@ function computerShoot() {
 startGameButton.addEventListener("click", () => {
     gameStarted = true;
     startGameButton.disabled = true;
-    generateComputerShips(); // <- Dôležité
+    generateComputerShips();
 });
 
 
@@ -240,10 +239,283 @@ function generateComputerShips() {
                 positions.forEach(pos => {
                     usedIndexes.add(pos);
                     computerShips.push(pos);
-                    pcGrid.children[pos].classList.add("ship");  //ak chcem aby lod neboli vydno tak pred riadok kodu dat toto => //
+                    pcGrid.children[pos].classList.add("ship");
                 });
                 placed = true;
             }
         }
     }
+}
+
+startGameButton.addEventListener("click", () => {
+    gameStarted = true;
+    startGameButton.disabled = true;
+    generateComputerShips();
+
+    [...playerGrid.children, ...pcGrid.children].forEach(cell => {
+        cell.style.backgroundColor = "white";
+        cell.style.border = "1px solid #ccc";
+        cell.classList.remove("hit", "miss", "sunk");
+    });
+});
+
+function playerShoot(square) {
+    if (!gameStarted || !playerTurn) return;
+    let index = parseInt(square.dataset.index);
+    if (square.classList.contains("hit") || square.classList.contains("miss")) return;
+
+    if (computerShips.includes(index)) {
+        square.classList.add("hit");
+        square.style.backgroundColor = "red";
+        score += 5;
+
+        let shipCells = computerShips.filter(pos => {
+            let cell = pcGrid.children[pos];
+            return cell.classList.contains("hit");
+        });
+
+        if (isShipSunk(index, computerShips, pcGrid)) {
+            shipCells.forEach(pos => {
+                let sunkCell = pcGrid.children[pos];
+                sunkCell.classList.add("sunk");
+                sunkCell.style.backgroundColor = "black";
+            });
+        } else {
+            return;
+        }
+    } else {
+        square.classList.add("miss");
+        square.style.backgroundColor = "blue";
+        playerTurn = false;
+        setTimeout(() => computerShoot(), 1000);
+    }
+
+    scoreBoard.textContent = `Body: ${score}`;
+}
+
+function isShipSunk(index, shipList, grid) {
+    let directionsToCheck = [1, -1, 10, -10];
+    for (let dir of directionsToCheck) {
+        let positions = [];
+        let i = index;
+        while (shipList.includes(i)) {
+            positions.push(i);
+            i += dir;
+        }
+        if (positions.every(pos => grid.children[pos].classList.contains("hit"))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+let difficulty = "easy";
+document.querySelectorAll(".obtiaznost button").forEach(btn => {
+    btn.addEventListener("click", () => {
+        difficulty = btn.textContent.toLowerCase();
+    });
+});
+
+function computerShoot() {
+    if (difficulty === "easy") {
+        let validShots = [...playerGrid.children].filter(cell =>
+            !cell.classList.contains("hit") &&
+            !cell.classList.contains("miss")
+        );
+        if (validShots.length === 0) return;
+        let randomShot = validShots[Math.floor(Math.random() * validShots.length)];
+        shootCell(randomShot);
+    }
+
+}
+
+function shootCell(cell) {
+    let index = parseInt(cell.dataset.index);
+    if (playerShips.includes(index)) {
+        cell.classList.add("hit");
+        cell.style.backgroundColor = "red";
+    } else {
+        cell.classList.add("miss");
+        cell.style.backgroundColor = "blue";
+        playerTurn = true;
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const playerGrid = document.getElementById("playerGrid");
+    const pcGrid = document.getElementById("pcGrid");
+
+    const createGrid = (gridElement) => {
+        for (let i = 0; i < 100; i++) {
+            const cell = document.createElement("div");
+            cell.dataset.index = i;
+            gridElement.appendChild(cell);
+        }
+    };
+
+
+    const getCell = (grid, index) => grid.children[index];
+
+    const markShip = (grid, ships, isPlayer) => {
+        if (isPlayer) {
+            ships.flat().forEach(index => {
+                getCell(grid, index).classList.add("ship");
+            });
+        }
+    };
+
+    markShip(playerGrid, playerShips, true);
+
+    const handleShot = (grid, ships, index, isPlayer) => {
+        const cell = getCell(grid, index);
+        if (cell.classList.contains("hit") || cell.classList.contains("miss")) return;
+
+        let hit = false;
+        for (const ship of ships) {
+            if (ship.includes(index)) {
+                cell.classList.add("hit", "disabled");
+                hit = true;
+
+                const allHit = ship.every(i => getCell(grid, i).classList.contains("hit"));
+                if (allHit) {
+                    ship.forEach(i => {
+                        getCell(grid, i).classList.remove("hit");
+                        getCell(grid, i).classList.add("sunk");
+                    });
+                }
+                break;
+            }
+        }
+        if (!hit) {
+            cell.classList.add("miss", "disabled");
+        }
+    };
+
+    pcGrid.addEventListener("click", (e) => {
+        const index = parseInt(e.target.dataset.index);
+        if (!isNaN(index)) {
+            handleShot(pcGrid, pcShips, index, false);
+            setTimeout(() => {
+                const available = Array.from(playerGrid.children)
+                    .filter(c => !c.classList.contains("hit") && !c.classList.contains("miss"));
+                if (available.length > 0) {
+                    const randCell = available[Math.floor(Math.random() * available.length)];
+                    const playerIndex = parseInt(randCell.dataset.index);
+                    handleShot(playerGrid, playerShips, playerIndex, true);
+                }
+            }, 1000);
+        }
+    });
+
+    document.querySelectorAll(".tab-button").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
+            document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+
+            btn.classList.add("active");
+            document.getElementById(btn.textContent.toLowerCase()).classList.add("active");
+        });
+    });
+});
+
+function placeShip(square, shipIndex) {
+    if (gameStarted || placedShips.includes(shipIndex)) return;
+
+    let size = shipSizes[shipIndex];
+    let index = parseInt(square.dataset.index);
+    let shipCells = [];
+
+    for (let i = 0; i < size; i++) {
+        let position;
+        let row = Math.floor(index / 10);
+        let col = index % 10;
+
+        switch (directions[currentDirectionIndex]) {
+            case "right":
+                position = index + i;
+                if (Math.floor(position / 10) !== row) return;
+                break;
+            case "down":
+                position = index + i * 10;
+                if (position >= 100) return;
+                break;
+            case "left":
+                position = index - i;
+                if (position < 0 || Math.floor(position / 10) !== row) return;
+                break;
+            case "up":
+                position = index - i * 10;
+                if (position < 0) return;
+                break;
+        }
+
+        let cell = playerGrid.children[position];
+        if (!cell || cell.classList.contains("ship")) return;
+        shipCells.push(position);
+    }
+
+    shipCells.forEach(i => playerGrid.children[i].classList.add("ship"));
+
+    playerShips.push(shipCells);
+    placedShips.push(shipIndex);
+}
+
+function computerShoot() {
+    let validShots = [...playerGrid.children].filter(cell =>
+        !cell.classList.contains("hit") && !cell.classList.contains("miss")
+    );
+    if (validShots.length === 0) return;
+
+    let randomShot = validShots[Math.floor(Math.random() * validShots.length)];
+    let index = parseInt(randomShot.dataset.index);
+
+    let hit = false;
+    for (let ship of playerShips) {
+        if (ship.includes(index)) {
+            randomShot.classList.add("hit");
+            randomShot.style.backgroundColor = "red";
+            hit = true;
+
+            let isSunk = ship.every(i =>
+                playerGrid.children[i].classList.contains("hit")
+            );
+
+            if (isSunk) {
+                ship.forEach(i => {
+                    let cell = playerGrid.children[i];
+                    cell.classList.remove("hit");
+                    cell.classList.add("sunk");
+                    cell.style.backgroundColor = "black";
+                });
+            }
+
+            break;
+        }
+    }
+
+    if (!hit) {
+        randomShot.classList.add("miss");
+        randomShot.style.backgroundColor = "blue";
+    }
+
+    playerTurn = true;
+}
+
+function pcTurn(playerBoard) {
+    let x = Math.floor(Math.random() * playerBoard.length);
+    let y = Math.floor(Math.random() * playerBoard[0].length);
+
+    while (playerBoard[x][y].wasShot) {
+        x = Math.floor(Math.random() * playerBoard.length);
+        y = Math.floor(Math.random() * playerBoard[0].length);
+    }
+
+    playerBoard[x][y].wasShot = true;
+
+    if (playerBoard[x][y].hasShip) {
+        console.log("PC trafilo loď na", x, y);
+    } else {
+        console.log("PC netrafilo nič na", x, y);
+    }
+
 }
