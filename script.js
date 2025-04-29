@@ -519,3 +519,106 @@ function pcTurn(playerBoard) {
     }
 
 }
+
+function checkGameEnd(ships, grid) {
+    const allSunk = ships.every(ship => {
+        return ship.every(index => {
+            const cell = grid.children[index];
+            return cell.classList.contains("sunk");
+        });
+    });
+
+    if (allSunk) {
+        endGame(allSunk);
+    }
+}
+
+
+function endGame(winner) {
+    gameStarted = false;
+    const message = winner ? 
+        "Gratulujeme! Potopili ste všetky lode počítača!" : 
+        "Bohužiaľ, počítač potopil všetky vaše lode!";
+    
+
+    const gameOverModal = document.createElement("div");
+    gameOverModal.className = "game-over-modal";
+    gameOverModal.innerHTML = `
+        <div class="modal-content">
+            <h2>${message}</h2>
+            <p>Vaše skóre: ${score}</p>
+            <button onclick="restartGame()">Hrať znova</button>
+        </div>
+    `;
+    document.body.appendChild(gameOverModal);
+}
+
+
+function playerShoot(square) {
+    if (!gameStarted || !playerTurn) return;
+    
+    let index = parseInt(square.dataset.index);
+    if (square.classList.contains("hit") || square.classList.contains("miss")) return;
+    
+    if (computerShips.includes(index)) {
+        square.classList.add("hit");
+        square.style.backgroundColor = "red";
+        score += 5;
+        
+        if (isShipSunk(index, computerShips, pcGrid)) {
+            const shipCells = computerShips.filter(pos => {
+                const cell = pcGrid.children[pos];
+                return cell.classList.contains("hit");
+            });
+            
+            shipCells.forEach(pos => {
+                const sunkCell = pcGrid.children[pos];
+                sunkCell.classList.add("sunk");
+                sunkCell.style.backgroundColor = "black";
+            });
+            
+            
+            checkGameEnd([shipCells], pcGrid);
+        }
+    } else {
+        square.classList.add("miss");
+        square.style.backgroundColor = "blue";
+        playerTurn = false;
+        setTimeout(computerShoot, 1000);
+    }
+    
+    scoreBoard.textContent = `Body: ${score}`;
+}
+
+
+function computerShoot() {
+    let validShots = [...playerGrid.children].filter(cell =>
+        !cell.classList.contains("hit") && 
+        !cell.classList.contains("miss")
+    );
+    
+    if (validShots.length === 0) {
+        endGame(false);
+        return;
+    }
+    
+    const randomShot = validShots[Math.floor(Math.random() * validShots.length)];
+    shootCell(randomShot);
+}
+
+function restartGame() {
+    gameStarted = false;
+    placedShips = [];
+    score = 0;
+    playerTurn = true;
+    createGrid(playerGrid, true);
+    createGrid(pcGrid, false);
+    createShipSelection();
+    scoreBoard.textContent = "Body: 0";
+    startGameButton.disabled = false;
+  
+    const modal = document.querySelector(".game-over-modal");
+    if (modal) {
+        modal.remove();
+    }
+}
