@@ -1,624 +1,790 @@
-let playerGrid = document.getElementById("playerGrid");
-let pcGrid = document.getElementById("pcGrid");
-let player2Grid = document.getElementById("player2Grid");
-let startGameButton = document.getElementById("startGame");
-let restartGameButton = document.getElementById("restartGame");
-let scoreBoard = document.getElementById("score");
+(() => {
+  const SHIP_SIZES = [5, 4, 3, 3, 2];
+  const ABILITIES = {
+    "3x3": { cost: 5, id: "ability-3x3", name: "Streľba 3x3" },
+    "row": { cost: 3, id: "ability-row", name: "Streľba Riadok" },
+    "col": { cost: 3, id: "ability-col", name: "Streľba Stĺpec" }
+  };
 
-let playerShips = [];
-let placedShips = [];
-let shipSizes = [2, 3, 3, 4, 4];
-let gameStarted = false;
-let score = 0;
-let playerTurn = true;
-let currentShipIndex = 0;
+  let BOARD_SIZE = 10;
+  let activeShipSizes = SHIP_SIZES.slice();
 
-let directions = ["right", "down", "left", "up"];
-let currentDirectionIndex = 0;
+  let playerBoard = [];
+  let pcBoard = [];
 
-let rotateDirectionButton = document.getElementById("rotateDirection");
-rotateDirectionButton.addEventListener("click", () => {
-    currentDirectionIndex = (currentDirectionIndex + 1) % directions.length;
-    let dirText = {
-        right: "→",
-        down: "↓",
-        left: "←",
-        up: "↑"
-    };
-    rotateDirectionButton.textContent = `Smer: ${dirText[directions[currentDirectionIndex]]}`;
+  let playerShips = [];
+  let pcShips = [];
 
-    [...player2Grid.children].forEach(ship => {
-        ship.classList.remove("rotate-right", "rotate-down", "rotate-left", "rotate-up");
-        ship.classList.add(`rotate-${directions[currentDirectionIndex]}`);
-    });
-});
+  let gamePhase = "setup";
+  let selectedAbility = null;
+  let playerPoints = 0;
+  let currentTurn = "player";
 
-function createGrid(gridElement, isPlayer) {
-    gridElement.innerHTML = "";
-    for (let i = 0; i < 100; i++) {
-        let square = document.createElement("div");
-        square.dataset.index = i;
+  let abilityUsageCounts = { "3x3": 0, "row": 0, "col": 0 };
 
-        if (isPlayer) {
-            square.addEventListener("dragover", (e) => e.preventDefault());
-            square.addEventListener("drop", (e) => {
-                e.preventDefault();
-                const shipIndex = parseInt(e.dataTransfer.getData("text/plain"));
-                placeShip(square, shipIndex);
-            });
-        } else {
-            square.addEventListener("click", () => playerShoot(square));
-        }
+  const playerBoardEl = document.getElementById("player-board");
+  const pcBoardEl = document.getElementById("pc-board");
+  const boardSizeSelect = document.getElementById("board-size");
+  const startBtn = document.getElementById("start-btn");
+  const restartBtn = document.getElementById("restart-btn");
+  const abilitiesButtons = {
+    "3x3": document.getElementById("ability-3x3"),
+    "row": document.getElementById("ability-row"),
+    "col": document.getElementById("ability-col"),
+  };
+  const pointsEl = document.getElementById("points");
+  const messageEl = document.getElementById("message");
+  const fleetContainer = document.getElementById("fleet-container");
+  const endgameOverlay = document.getElementById("endgame-overlay");
+  const endgameMessage = document.getElementById("endgame-message");
+  const abilityUsageList = document.getElementById("ability-usage-list");
+  const closeEndgameBtn = document.getElementById("close-endgame-btn");
 
-        gridElement.appendChild(square);
+  function createEmptyBoard() {
+    let board = [];
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      let row = [];
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        row.push({ hasShip: false, hit: false, shipId: null });
+      }
+      board.push(row);
     }
-}
+    return board;
+  }
 
-function createShipSelection() {
-    player2Grid.innerHTML = "";
-    shipSizes.forEach((size, index) => {
-        let ship = document.createElement("div");
-        ship.classList.add("ship-selection", `rotate-${directions[currentDirectionIndex]}`);
-        ship.setAttribute("draggable", "true");
-        ship.dataset.size = size;
-        ship.dataset.index = index;
+  function updateBoardGridStyles() {
+    playerBoardEl.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 30px)`;
+    playerBoardEl.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 30px)`;
+    pcBoardEl.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 30px)`;
+    pcBoardEl.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 30px)`;
+  }
 
-        for (let i = 0; i < size; i++) {
-            let cell = document.createElement("div");
-            cell.classList.add("ship-cell");
-            ship.appendChild(cell);
+  function updateStartBtnState() {
+    startBtn.disabled = fleetContainer.children.length > 0 ? false : true;
+  }
+
+  function createFleetShips() {
+    fleetContainer.innerHTML = "";
+    if (BOARD_SIZE >= 15) {
+      activeShipSizes = SHIP_SIZES.concat(SHIP_SIZES);
+    } else {
+      activeShipSizes = SHIP_SIZES.slice();
+    }
+    for (let i = 0; i < activeShipSizes.length; i++) {
+      let size = activeShipSizes[i];
+      let shipEl = document.createElement("div");
+      shipEl.classList.add("fleet-ship", "horizontal");
+      shipEl.draggable = true;
+      shipEl.dataset.size = size;
+      shipEl.dataset.index = i;
+      shipEl.dataset.orientation = "horizontal";
+      for (let s = 0; s < size; s++) {
+        const part = document.createElement("span");
+        part.textContent = "";
+        shipEl.appendChild(part);
+      }
+      shipEl.title = `Loď veľkosti ${size}, potiahnite na vašu dosku. Pravým klikom alebo šípkami otočte.`;
+      fleetContainer.appendChild(shipEl);
+    }
+    updateStartBtnState();
+  }
+
+  function renderBoards() {
+    updateBoardGridStyles();
+
+    playerBoardEl.innerHTML = "";
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        let pCell = document.createElement("div");
+        pCell.classList.add("cell");
+        pCell.dataset.row = r;
+        pCell.dataset.col = c;
+        if (playerBoard[r][c].hasShip) {
+          pCell.classList.add("ship");
+          let ship = playerShips[playerBoard[r][c].shipId];
+          if (ship && ship.hits >= ship.size) {
+            if (ship.size === 2) {
+              pCell.classList.add("sunk-small");
+            } else {
+              pCell.classList.add("sunk");
+            }
+          }
         }
+        if (playerBoard[r][c].hit) {
+          pCell.classList.toggle("hit", playerBoard[r][c].hasShip);
+          pCell.classList.toggle("miss", !playerBoard[r][c].hasShip);
+        }
+        pCell.title = `(${r + 1},${c + 1})`;
+        playerBoardEl.appendChild(pCell);
+      }
+    }
 
-        ship.addEventListener("dragstart", (e) => {
-            e.dataTransfer.setData("text/plain", index);
-            currentShipIndex = index;
+    pcBoardEl.innerHTML = "";
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        let pcCell = document.createElement("div");
+        pcCell.classList.add("cell");
+        pcCell.dataset.row = r;
+        pcCell.dataset.col = c;
+        if (pcBoard[r][c].hit && pcBoard[r][c].hasShip) {
+          let ship = pcShips[pcBoard[r][c].shipId];
+          if (ship && ship.hits >= ship.size) {
+            if (ship.size === 2) {
+              pcCell.classList.add("sunk-small");
+            } else {
+              pcCell.classList.add("sunk");
+            }
+          } else {
+            pcCell.classList.add("hit");
+          }
+        } else if (pcBoard[r][c].hit && !pcBoard[r][c].hasShip) {
+          pcCell.classList.add("miss");
+        }
+        pcCell.title = `(${r + 1},${c + 1})`;
+        pcBoardEl.appendChild(pcCell);
+      }
+    }
+  }
+
+  function canPlaceShip(board, row, col, size, horizontal, ignoreShipId = null) {
+    if (horizontal) {
+      if (col + size > BOARD_SIZE) return false;
+      for (let i = 0; i < size; i++) {
+        if (board[row][col + i].hasShip &&
+           (ignoreShipId === null || board[row][col + i].shipId !== ignoreShipId)) return false;
+      }
+    } else {
+      if (row + size > BOARD_SIZE) return false;
+      for (let i = 0; i < size; i++) {
+        if (board[row + i][col].hasShip &&
+           (ignoreShipId === null || board[row + i][col].shipId !== ignoreShipId)) return false;
+      }
+    }
+    return true;
+  }
+
+  function placeShip(board, ships, row, col, size, horizontal, shipIndex = null) {
+    if (shipIndex !== null) {
+      const oldShip = ships[shipIndex];
+      if (oldShip) {
+        oldShip.cells.forEach(([r, c]) => {
+          board[r][c].hasShip = false;
+          board[r][c].shipId = null;
         });
-
-        player2Grid.appendChild(ship);
-    });
-}
-
-function placeShip(square, shipIndex) {
-    if (gameStarted || placedShips.includes(shipIndex)) return;
-
-    let size = shipSizes[shipIndex];
-    let index = parseInt(square.dataset.index);
+      }
+    } else {
+      shipIndex = ships.length;
+    }
     let shipCells = [];
-
     for (let i = 0; i < size; i++) {
-        let position;
-        let row = Math.floor(index / 10);
-        let col = index % 10;
-
-        switch (directions[currentDirectionIndex]) {
-            case "right":
-                position = index + i;
-                if (Math.floor(position / 10) !== row) return;
-                break;
-            case "down":
-                position = index + i * 10;
-                if (position >= 100) return;
-                break;
-            case "left":
-                position = index - i;
-                if (position < 0 || Math.floor(position / 10) !== row) return;
-                break;
-            case "up":
-                position = index - i * 10;
-                if (position < 0) return;
-                break;
-        }
-
-        let cell = playerGrid.children[position];
-        if (!cell || cell.classList.contains("ship")) return;
-        shipCells.push(cell);
+      let r = horizontal ? row : row + i;
+      let c = horizontal ? col + i : col;
+      board[r][c].hasShip = true;
+      board[r][c].shipId = shipIndex;
+      shipCells.push([r, c]);
     }
+    ships[shipIndex] = { size, cells: shipCells, hits: 0, horizontal };
+  }
 
-    shipCells.forEach(cell => cell.classList.add("ship"));
-    placedShips.push(shipIndex);
-}
-
-function playerShoot(square) {
-    if (!gameStarted || !playerTurn) return;
-    let index = parseInt(square.dataset.index);
-    if (square.classList.contains("hit") || square.classList.contains("miss")) return;
-
-    if (computerShips.includes(index)) {
-        square.classList.add("hit");
-        score += 5;
-    } else {
-        square.classList.add("miss");
-    }
-
-    scoreBoard.textContent = `Body: ${score}`;
-    playerTurn = false;
-    setTimeout(computerShoot, 1000);
-}
-
-function computerShoot() {
-    let validShots = [...playerGrid.children].filter(cell => !cell.classList.contains("hit") && !cell.classList.contains("miss"));
-    if (validShots.length === 0) return;
-    let randomShot = validShots[Math.floor(Math.random() * validShots.length)];
-    let index = parseInt(randomShot.dataset.index);
-
-    if (playerShips.includes(index)) {
-        randomShot.classList.add("hit");
-    } else {
-        randomShot.classList.add("miss");
-    }
-
-    playerTurn = true;
-}
-
-startGameButton.addEventListener("click", () => {
-    gameStarted = true;
-    startGameButton.disabled = true;
-    generateComputerShips();
-});
-
-
-restartGameButton.addEventListener("click", () => {
-    gameStarted = false;
-    placedShips = [];
-    score = 0;
-    playerTurn = true;
-    createGrid(playerGrid, true);
-    createGrid(pcGrid, false);
-    createShipSelection();
-    scoreBoard.textContent = "Body: 0";
-    startGameButton.disabled = false;
-});
-
-function openTab(tabName) {
-    const tabContents = document.getElementsByClassName("tab-content");
-    const tabButtons = document.getElementsByClassName("tab-button");
-
-    for (let i = 0; i < tabContents.length; i++) {
-        tabContents[i].classList.remove("active");
-        tabButtons[i].classList.remove("active");
-    }
-
-    document.getElementById(tabName).classList.add("active");
-    event.currentTarget.classList.add("active");
-}
-
-createGrid(playerGrid, true);
-createGrid(pcGrid, false);
-createShipSelection();
-
-let computerShips = [];
-
-
-
-function generateComputerShips() {
-    computerShips = [];
-    let usedIndexes = new Set();
-
-    for (let size of shipSizes) {
-        let placed = false;
-
-        while (!placed) {
-            let direction = directions[Math.floor(Math.random() * directions.length)];
-            let index = Math.floor(Math.random() * 100);
-            let positions = [];
-            let valid = true;
-
-            for (let i = 0; i < size; i++) {
-                let pos;
-                let row = Math.floor(index / 10);
-                let col = index % 10;
-
-                switch (direction) {
-                    case "right":
-                        pos = index + i;
-                        if (Math.floor(pos / 10) !== row) valid = false;
-                        break;
-                    case "down":
-                        pos = index + i * 10;
-                        if (pos >= 100) valid = false;
-                        break;
-                    case "left":
-                        pos = index - i;
-                        if (pos < 0 || Math.floor(pos / 10) !== row) valid = false;
-                        break;
-                    case "up":
-                        pos = index - i * 10;
-                        if (pos < 0) valid = false;
-                        break;
-                }
-
-                if (!valid || usedIndexes.has(pos)) {
-                    valid = false;
-                    break;
-                }
-
-                positions.push(pos);
-            }
-
-            if (valid) {
-                positions.forEach(pos => {
-                    usedIndexes.add(pos);
-                    computerShips.push(pos);
-                    pcGrid.children[pos].classList.add("ship");
-                });
-                placed = true;
-            }
-        }
-    }
-}
-
-startGameButton.addEventListener("click", () => {
-    gameStarted = true;
-    startGameButton.disabled = true;
-    generateComputerShips();
-
-    [...playerGrid.children, ...pcGrid.children].forEach(cell => {
-        cell.style.backgroundColor = "white";
-        cell.style.border = "1px solid #ccc";
-        cell.classList.remove("hit", "miss", "sunk");
+  function removeShip(board, ships, shipIndex) {
+    if (shipIndex == null) return;
+    const ship = ships[shipIndex];
+    if (!ship) return;
+    ship.cells.forEach(([r, c]) => {
+      board[r][c].hasShip = false;
+      board[r][c].shipId = null;
     });
-});
+    ships.splice(shipIndex, 1);
+  }
 
-function playerShoot(square) {
-    if (!gameStarted || !playerTurn) return;
-    let index = parseInt(square.dataset.index);
-    if (square.classList.contains("hit") || square.classList.contains("miss")) return;
+  function randint(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
 
-    if (computerShips.includes(index)) {
-        square.classList.add("hit");
-        square.style.backgroundColor = "red";
-        score += 5;
-
-        let shipCells = computerShips.filter(pos => {
-            let cell = pcGrid.children[pos];
-            return cell.classList.contains("hit");
-        });
-
-        if (isShipSunk(index, computerShips, pcGrid)) {
-            shipCells.forEach(pos => {
-                let sunkCell = pcGrid.children[pos];
-                sunkCell.classList.add("sunk");
-                sunkCell.style.backgroundColor = "black";
-            });
-        } else {
-            return;
-        }
-    } else {
-        square.classList.add("miss");
-        square.style.backgroundColor = "blue";
-        playerTurn = false;
-        setTimeout(() => computerShoot(), 1000);
+  function placePCShips() {
+    pcBoard = createEmptyBoard();
+    pcShips = [];
+    let attempts = 0;
+    while (pcShips.length < activeShipSizes.length && attempts < 5000) {
+      let size = activeShipSizes[pcShips.length];
+      let horizontal = Math.random() < 0.5;
+      let r = randint(0, BOARD_SIZE - (horizontal ? 1 : size));
+      let c = randint(0, BOARD_SIZE - (horizontal ? size : 1));
+      if (canPlaceShip(pcBoard, r, c, size, horizontal)) {
+        placeShip(pcBoard, pcShips, r, c, size, horizontal);
+      }
+      attempts++;
     }
+    if (pcShips.length < activeShipSizes.length) {
+      pcBoard = createEmptyBoard();
+      pcShips = [];
+    }
+  }
 
-    scoreBoard.textContent = `Body: ${score}`;
-}
+  function resetGame() {
+    playerBoard = createEmptyBoard();
+    pcBoard = createEmptyBoard();
+    playerShips = [];
+    pcShips = [];
+    selectedAbility = null;
+    playerPoints = 0;
+    pointsEl.textContent = "Body: 0";
+    currentTurn = "player";
+    gamePhase = "setup";
+    messageEl.textContent = "Potiahnite svoje lode na dosku. Pravým klikom alebo šípkami otáčajte lode. Potiahnutím presúvajte.";
+    startBtn.disabled = true;
+    restartBtn.disabled = true;
+    boardSizeSelect.disabled = false;
+    for (let ab in abilitiesButtons) {
+      abilitiesButtons[ab].disabled = true;
+      abilitiesButtons[ab].classList.remove("selected");
+    }
+    abilityUsageCounts = { "3x3": 0, "row": 0, "col": 0 };
+    createFleetShips();
+    renderBoards();
 
-function isShipSunk(index, shipList, grid) {
-    let directionsToCheck = [1, -1, 10, -10];
-    for (let dir of directionsToCheck) {
-        let positions = [];
-        let i = index;
-        while (shipList.includes(i)) {
-            positions.push(i);
-            i += dir;
+    pcHitsStack = [];
+
+    hideEndgameOverlay();
+
+    updateBoardGridStyles();
+  }
+
+  document.body.addEventListener("contextmenu", e => {
+    if (e.target.closest(".fleet-ship")) {
+      e.preventDefault();
+      let ship = e.target.closest(".fleet-ship");
+      let orientation = ship.dataset.orientation;
+      orientation = orientation === "horizontal" ? "vertical" : "horizontal";
+      ship.dataset.orientation = orientation;
+      ship.classList.toggle("horizontal", orientation === "horizontal");
+      ship.classList.toggle("vertical", orientation === "vertical");
+    }
+    else if (e.target.classList.contains("cell") && gamePhase === "setup") {
+      let row = parseInt(e.target.dataset.row);
+      let col = parseInt(e.target.dataset.col);
+      if (playerBoard[row][col].hasShip) {
+        e.preventDefault();
+        const shipId = playerBoard[row][col].shipId;
+        const ship = playerShips[shipId];
+        if (!ship) return;
+        const newOrientation = ship.horizontal ? false : true;
+        let startRow = Math.min(...ship.cells.map(c => c[0]));
+        let startCol = Math.min(...ship.cells.map(c => c[1]));
+        if (canPlaceShip(playerBoard, startRow, startCol, ship.size, newOrientation, shipId)) {
+          placeShip(playerBoard, playerShips, startRow, startCol, ship.size, newOrientation, shipId);
+          renderBoards();
+          messageEl.textContent = "Loď otočená.";
+        } else {
+          messageEl.textContent = "Loď tu nemožno otočiť.";
         }
-        if (positions.every(pos => grid.children[pos].classList.contains("hit"))) {
-            return true;
+      }
+    }
+  });
+
+  let draggedShip = null;
+  let draggedShipIndex = null;
+  let draggedShipSize = 0;
+  let draggedOrientation = "horizontal";
+
+  fleetContainer.addEventListener("dragstart", e => {
+    if (gamePhase !== "setup") {
+      e.preventDefault();
+      return;
+    }
+    if (!e.target.classList.contains("fleet-ship")) return;
+    draggedShip = e.target;
+    draggedShipSize = parseInt(draggedShip.dataset.size);
+    draggedOrientation = draggedShip.dataset.orientation;
+    draggedShipIndex = parseInt(draggedShip.dataset.index);
+    draggedShip.classList.add("dragging");
+  });
+
+  fleetContainer.addEventListener("dragend", e => {
+    if (draggedShip) draggedShip.classList.remove("dragging");
+    draggedShip = null;
+    draggedShipIndex = null;
+  });
+
+  document.addEventListener("keydown", e => {
+    if (!draggedShip || gamePhase !== "setup") return;
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      let orientation = draggedShip.dataset.orientation;
+      orientation = orientation === "horizontal" ? "vertical" : "horizontal";
+      draggedShip.dataset.orientation = orientation;
+      draggedShip.classList.toggle("horizontal", orientation === "horizontal");
+      draggedShip.classList.toggle("vertical", orientation === "vertical");
+      draggedOrientation = orientation;
+    }
+  });
+
+  playerBoardEl.addEventListener("dragover", e => {
+    if (gamePhase !== "setup") return;
+    if (!draggedShip) return;
+    e.preventDefault();
+    let cell = e.target.closest(".cell");
+    if (!cell) return;
+    highlightDragOver(cell);
+  });
+
+  playerBoardEl.addEventListener("dragleave", e => {
+    if (gamePhase !== "setup") return;
+    clearDragOverHighlight();
+  });
+
+  playerBoardEl.addEventListener("drop", e => {
+    if (gamePhase !== "setup") return;
+    if (!draggedShip) return;
+    e.preventDefault();
+    let cell = e.target.closest(".cell");
+    if (!cell) return;
+    clearDragOverHighlight();
+    let row = parseInt(cell.dataset.row);
+    let col = parseInt(cell.dataset.col);
+
+    if (canPlaceShip(playerBoard, row, col, draggedShipSize, draggedOrientation === "horizontal")) {
+      placeShip(playerBoard, playerShips, row, col, draggedShipSize, draggedOrientation === "horizontal");
+      fleetContainer.removeChild(draggedShip);
+      draggedShip = null;
+      draggedShipIndex = null;
+      renderBoards();
+      messageEl.textContent = `Loď veľkosti ${draggedShipSize} umiestnená.`;
+      if (fleetContainer.children.length === 0) {
+        messageEl.textContent = "Všetky lode umiestnené. Zvoľte veľkosť hracej plochy a kliknite Začať.";
+        startBtn.disabled = false;
+      }
+    } else {
+      messageEl.textContent = "Loď tu nemožno umiestniť.";
+    }
+  });
+
+  function highlightDragOver(cell) {
+    clearDragOverHighlight();
+    let row = parseInt(cell.dataset.row);
+    let col = parseInt(cell.dataset.col);
+    let size = draggedShipSize;
+    let horizontal = draggedOrientation === "horizontal";
+    let fits = canPlaceShip(playerBoard, row, col, size, horizontal, null);
+    if (!fits) return;
+
+    if (horizontal) {
+      for (let i = 0; i < size; i++) {
+        let c = col + i;
+        if(c < BOARD_SIZE) {
+          let idx = row * BOARD_SIZE + c;
+          let el = playerBoardEl.children[idx];
+          if (el) el.classList.add("drag-over");
         }
+      }
+    } else {
+      for (let i = 0; i < size; i++) {
+        let r = row + i;
+        if(r < BOARD_SIZE) {
+          let idx = r * BOARD_SIZE + col;
+          let el = playerBoardEl.children[idx];
+          if (el) el.classList.add("drag-over");
+        }
+      }
+    }
+  }
+
+  function clearDragOverHighlight() {
+    playerBoardEl.querySelectorAll(".cell.drag-over").forEach(el => el.classList.remove("drag-over"));
+  }
+
+
+  let draggingPlacedShip = null;
+  let draggedPlacedShipId = null;
+
+  playerBoardEl.addEventListener("mousedown", e => {
+    if (gamePhase !== "setup") return;
+    if (!e.target.classList.contains("cell")) return;
+    let row = parseInt(e.target.dataset.row);
+    let col = parseInt(e.target.dataset.col);
+    if (!playerBoard[row][col].hasShip) return;
+
+    draggedPlacedShipId = playerBoard[row][col].shipId;
+    draggingPlacedShip = true;
+    e.preventDefault();
+  });
+
+  document.addEventListener("mouseup", e => {
+    if (!draggingPlacedShip) return;
+    let target = document.elementFromPoint(e.clientX, e.clientY);
+    if (target && target.classList.contains("cell") && target.parentElement === playerBoardEl) {
+      let row = parseInt(target.dataset.row);
+      let col = parseInt(target.dataset.col);
+      let ship = playerShips[draggedPlacedShipId];
+      if (!ship) {
+        draggingPlacedShip = null;
+        draggedPlacedShipId = null;
+        return;
+      }
+      if (canPlaceShip(playerBoard, row, col, ship.size, ship.horizontal, draggedPlacedShipId)) {
+        placeShip(playerBoard, playerShips, row, col, ship.size, ship.horizontal, draggedPlacedShipId);
+        renderBoards();
+        messageEl.textContent = "Loď presunutá.";
+      } else {
+        messageEl.textContent = "Loď nemožno presunúť sem.";
+      }
+    }
+    draggingPlacedShip = null;
+    draggedPlacedShipId = null;
+  });
+
+  startBtn.addEventListener("click", () => {
+    if (gamePhase !== "setup") return;
+    if (fleetContainer.children.length > 0) {
+      messageEl.textContent = "Umiestnite všetky lode pred začatím.";
+      return;
+    }
+    BOARD_SIZE = parseInt(boardSizeSelect.value);
+    if (BOARD_SIZE >= 15) {
+      activeShipSizes = SHIP_SIZES.concat(SHIP_SIZES);
+    } else {
+      activeShipSizes = SHIP_SIZES.slice();
+    }
+    placePCShips();
+    gamePhase = "playing";
+    startBtn.disabled = true;
+    restartBtn.disabled = false;
+    boardSizeSelect.disabled = true;
+    for (let ab in abilitiesButtons) {
+      abilitiesButtons[ab].disabled = false;
+    }
+    playerPoints = 0;
+    pointsEl.textContent = "Body: 0";
+    messageEl.textContent = "Hra začala! Vaša rada na streľbu.";
+    renderBoards();
+
+    pcHitsStack = [];
+  });
+
+  restartBtn.addEventListener("click", () => {
+    resetGame();
+  });
+
+  for (let ab in abilitiesButtons) {
+    abilitiesButtons[ab].addEventListener("click", () => {
+      if (gamePhase !== "playing") return;
+      if (selectedAbility === ab) {
+        selectedAbility = null;
+        abilitiesButtons[ab].classList.remove("selected");
+        messageEl.textContent = "Zvolená obyčajná streľba. Kliknite na dosku počítača pre streľbu.";
+      } else {
+        if (playerPoints < ABILITIES[ab].cost) {
+          messageEl.textContent = `Nedostatok bodov pre ${ab} streľbu.`;
+          return;
+        }
+        selectedAbility = ab;
+        for (let other in abilitiesButtons) {
+          if (other === ab) abilitiesButtons[other].classList.add("selected");
+          else abilitiesButtons[other].classList.remove("selected");
+        }
+        messageEl.textContent = `Zvolená špeciálna streľba: ${ab}. Najeďte na dosku počítača pre náhľad, kliknite pre výstrel.`;
+      }
+    });
+  }
+
+  let previewCells = [];
+
+  pcBoardEl.addEventListener("mousemove", e => {
+    if (gamePhase !== "playing") return;
+    if (!selectedAbility) return clearPreview();
+
+    if (!e.target.classList.contains("cell")) return clearPreview();
+    let row = parseInt(e.target.dataset.row);
+    let col = parseInt(e.target.dataset.col);
+
+    clearPreview();
+
+    if (selectedAbility === "3x3") {
+      for(let r = row-1; r <= row+1; r++) {
+        for(let c = col-1; c <= col+1; c++) {
+          if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
+            highlightCell(r,c);
+          }
+        }
+      }
+    } else if (selectedAbility === "row") {
+      for(let c = 0; c < BOARD_SIZE; c++) highlightCell(row,c);
+    } else if (selectedAbility === "col") {
+      for(let r = 0; r < BOARD_SIZE; r++) highlightCell(r,col);
+    }
+  });
+
+  pcBoardEl.addEventListener("mouseleave", clearPreview);
+
+  function clearPreview() {
+    previewCells.forEach(cell => {
+      cell.classList.remove("highlight");
+    });
+    previewCells = [];
+  }
+
+  function highlightCell(row, col) {
+    let idx = row*BOARD_SIZE + col;
+    let cell = pcBoardEl.children[idx];
+    if (cell) {
+      cell.classList.add("highlight");
+      previewCells.push(cell);
+    }
+  }
+
+  pcBoardEl.addEventListener("click", e => {
+    if (gamePhase !== "playing") return;
+    if (currentTurn !== "player") return;
+    if (!e.target.classList.contains("cell")) return;
+    if (selectedAbility === null) {
+      let row = parseInt(e.target.dataset.row);
+      let col = parseInt(e.target.dataset.col);
+      if (pcBoard[row][col].hit) {
+        messageEl.textContent = "Už ste tu strieľali. Skúste inú bunku.";
+        return;
+      }
+      let hit = applyShot(row,col);
+      if(hit) {
+        playerPoints++;
+        pointsEl.textContent = `Body: ${playerPoints}`;
+      }
+      endTurn();
+    } else {
+      let row = parseInt(e.target.dataset.row);
+      let col = parseInt(e.target.dataset.col);
+      let cost = ABILITIES[selectedAbility].cost;
+      if (playerPoints < cost) {
+        messageEl.textContent = "Nedostatok bodov na túto špeciálnu streľbu.";
+        return;
+      }
+      let hitsCount = 0;
+      if (selectedAbility === "3x3") {
+        for(let r = row-1; r <= row+1; r++) {
+          for(let c = col-1; c <= col+1; c++) {
+            if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
+              if(!pcBoard[r][c].hit) {
+                if(applyShot(r,c)) {
+                  hitsCount++;
+                }
+              }
+            }
+          }
+        }
+      } else if (selectedAbility === "row") {
+        for(let c = 0; c < BOARD_SIZE; c++) {
+          if(!pcBoard[row][c].hit) {
+            if(applyShot(row,c)) {
+              hitsCount++;
+            }
+          }
+        }
+      } else if (selectedAbility === "col") {
+        for(let r = 0; r < BOARD_SIZE; r++) {
+          if(!pcBoard[r][col].hit) {
+            if(applyShot(r,col)) {
+              hitsCount++;
+            }
+          }
+        }
+      }
+      playerPoints -= cost;
+      playerPoints += hitsCount;
+      pointsEl.textContent = `Body: ${playerPoints}`;
+      if(abilityUsageCounts.hasOwnProperty(selectedAbility)) {
+        abilityUsageCounts[selectedAbility]++;
+      }
+      selectedAbility = null;
+      for (let ab in abilitiesButtons) {
+        abilitiesButtons[ab].classList.remove("selected");
+      }
+      clearPreview();
+      endTurn();
+    }
+    renderBoards();
+  });
+
+  function applyShot(row,col) {
+    if (pcBoard[row][col].hit) return false;
+
+    pcBoard[row][col].hit = true;
+
+    if (pcBoard[row][col].hasShip) {
+      let shipId = pcBoard[row][col].shipId;
+      if (shipId !== null) {
+        pcShips[shipId].hits++;
+        messageEl.textContent = "Zásah!";
+        if (pcShips[shipId].hits >= pcShips[shipId].size) {
+          messageEl.textContent = `Potopili ste nepriateľskú loď veľkosti ${pcShips[shipId].size}!`;
+        }
+      }
+      checkWin();
+      return true;
+    } else {
+      messageEl.textContent = "Mimo!";
+      checkWin();
+      return false;
+    }
+  }
+
+  function applyPlayerShot(row, col) {
+    if (playerBoard[row][col].hit) return false;
+
+    playerBoard[row][col].hit = true;
+
+    if (playerBoard[row][col].hasShip) {
+      let shipId = playerBoard[row][col].shipId;
+      if (shipId !== null) {
+        playerShips[shipId].hits++;
+        messageEl.textContent = "Vaša loď bola zasiahnutá!";
+        if (playerShips[shipId].hits >= playerShips[shipId].size) {
+          messageEl.textContent = `Vaša loď veľkosti ${playerShips[shipId].size} bola potopená!`;
+        }
+      }
+      checkWin();
+      return true;
+    } else {
+      messageEl.textContent = "Počítač minul!";
+      checkWin();
+      return false;
+    }
+  }
+
+  function checkWin() {
+    let pcSunkAll = pcShips.every(s => s.hits >= s.size);
+    let playerSunkAll = playerShips.every(s => s.hits >= s.size);
+    if (pcSunkAll) {
+      messageEl.textContent = "Gratulujeme! Vyhrali ste!";
+      gamePhase = "gameover";
+      endGame(true);
+      return true;
+    }
+    if (playerSunkAll) {
+      messageEl.textContent = "Prehrali ste! Počítač vyhral.";
+      gamePhase = "gameover";
+      endGame(false);
+      return true;
     }
     return false;
-}
+  }
 
-let difficulty = "easy";
-document.querySelectorAll(".obtiaznost button").forEach(btn => {
-    btn.addEventListener("click", () => {
-        difficulty = btn.textContent.toLowerCase();
-    });
-});
-
-function computerShoot() {
-    if (difficulty === "easy") {
-        let validShots = [...playerGrid.children].filter(cell =>
-            !cell.classList.contains("hit") &&
-            !cell.classList.contains("miss")
-        );
-        if (validShots.length === 0) return;
-        let randomShot = validShots[Math.floor(Math.random() * validShots.length)];
-        shootCell(randomShot);
+  function endGame(playerWon) {
+    for (let ab in abilitiesButtons) {
+      abilitiesButtons[ab].disabled = true;
+      abilitiesButtons[ab].classList.remove("selected");
     }
+    currentTurn = null;
+    showEndgameOverlay(playerWon);
+  }
 
-}
-
-function shootCell(cell) {
-    let index = parseInt(cell.dataset.index);
-    if (playerShips.includes(index)) {
-        cell.classList.add("hit");
-        cell.style.backgroundColor = "red";
+  function showEndgameOverlay(playerWon) {
+    if (playerWon) {
+      endgameMessage.textContent = "GRATULUJEME!\nVYHRALI STE!";
     } else {
-        cell.classList.add("miss");
-        cell.style.backgroundColor = "blue";
-        playerTurn = true;
-    }
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    const playerGrid = document.getElementById("playerGrid");
-    const pcGrid = document.getElementById("pcGrid");
-
-    const createGrid = (gridElement) => {
-        for (let i = 0; i < 100; i++) {
-            const cell = document.createElement("div");
-            cell.dataset.index = i;
-            gridElement.appendChild(cell);
-        }
-    };
-
-
-    const getCell = (grid, index) => grid.children[index];
-
-    const markShip = (grid, ships, isPlayer) => {
-        if (isPlayer) {
-            ships.flat().forEach(index => {
-                getCell(grid, index).classList.add("ship");
-            });
-        }
-    };
-
-    markShip(playerGrid, playerShips, true);
-
-    const handleShot = (grid, ships, index, isPlayer) => {
-        const cell = getCell(grid, index);
-        if (cell.classList.contains("hit") || cell.classList.contains("miss")) return;
-
-        let hit = false;
-        for (const ship of ships) {
-            if (ship.includes(index)) {
-                cell.classList.add("hit", "disabled");
-                hit = true;
-
-                const allHit = ship.every(i => getCell(grid, i).classList.contains("hit"));
-                if (allHit) {
-                    ship.forEach(i => {
-                        getCell(grid, i).classList.remove("hit");
-                        getCell(grid, i).classList.add("sunk");
-                    });
-                }
-                break;
-            }
-        }
-        if (!hit) {
-            cell.classList.add("miss", "disabled");
-        }
-    };
-
-    pcGrid.addEventListener("click", (e) => {
-        const index = parseInt(e.target.dataset.index);
-        if (!isNaN(index)) {
-            handleShot(pcGrid, pcShips, index, false);
-            setTimeout(() => {
-                const available = Array.from(playerGrid.children)
-                    .filter(c => !c.classList.contains("hit") && !c.classList.contains("miss"));
-                if (available.length > 0) {
-                    const randCell = available[Math.floor(Math.random() * available.length)];
-                    const playerIndex = parseInt(randCell.dataset.index);
-                    handleShot(playerGrid, playerShips, playerIndex, true);
-                }
-            }, 1000);
-        }
-    });
-
-    document.querySelectorAll(".tab-button").forEach(btn => {
-        btn.addEventListener("click", () => {
-            document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
-            document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-
-            btn.classList.add("active");
-            document.getElementById(btn.textContent.toLowerCase()).classList.add("active");
-        });
-    });
-});
-
-function placeShip(square, shipIndex) {
-    if (gameStarted || placedShips.includes(shipIndex)) return;
-
-    let size = shipSizes[shipIndex];
-    let index = parseInt(square.dataset.index);
-    let shipCells = [];
-
-    for (let i = 0; i < size; i++) {
-        let position;
-        let row = Math.floor(index / 10);
-        let col = index % 10;
-
-        switch (directions[currentDirectionIndex]) {
-            case "right":
-                position = index + i;
-                if (Math.floor(position / 10) !== row) return;
-                break;
-            case "down":
-                position = index + i * 10;
-                if (position >= 100) return;
-                break;
-            case "left":
-                position = index - i;
-                if (position < 0 || Math.floor(position / 10) !== row) return;
-                break;
-            case "up":
-                position = index - i * 10;
-                if (position < 0) return;
-                break;
-        }
-
-        let cell = playerGrid.children[position];
-        if (!cell || cell.classList.contains("ship")) return;
-        shipCells.push(position);
+      endgameMessage.textContent = "PREHRALI STE!\nPOČÍTAČ VYHRAL.";
     }
 
-    shipCells.forEach(i => playerGrid.children[i].classList.add("ship"));
-
-    playerShips.push(shipCells);
-    placedShips.push(shipIndex);
-}
-
-function computerShoot() {
-    let validShots = [...playerGrid.children].filter(cell =>
-        !cell.classList.contains("hit") && !cell.classList.contains("miss")
-    );
-    if (validShots.length === 0) return;
-
-    let randomShot = validShots[Math.floor(Math.random() * validShots.length)];
-    let index = parseInt(randomShot.dataset.index);
-
-    let hit = false;
-    for (let ship of playerShips) {
-        if (ship.includes(index)) {
-            randomShot.classList.add("hit");
-            randomShot.style.backgroundColor = "red";
-            hit = true;
-
-            let isSunk = ship.every(i =>
-                playerGrid.children[i].classList.contains("hit")
-            );
-
-            if (isSunk) {
-                ship.forEach(i => {
-                    let cell = playerGrid.children[i];
-                    cell.classList.remove("hit");
-                    cell.classList.add("sunk");
-                    cell.style.backgroundColor = "black";
-                });
-            }
-
-            break;
-        }
-    }
-
-    if (!hit) {
-        randomShot.classList.add("miss");
-        randomShot.style.backgroundColor = "blue";
-    }
-
-    playerTurn = true;
-}
-
-function pcTurn(playerBoard) {
-    let x = Math.floor(Math.random() * playerBoard.length);
-    let y = Math.floor(Math.random() * playerBoard[0].length);
-
-    while (playerBoard[x][y].wasShot) {
-        x = Math.floor(Math.random() * playerBoard.length);
-        y = Math.floor(Math.random() * playerBoard[0].length);
-    }
-
-    playerBoard[x][y].wasShot = true;
-
-    if (playerBoard[x][y].hasShip) {
-        console.log("PC trafilo loď na", x, y);
+    let usedAbilities = Object.entries(abilityUsageCounts)
+      .filter(([key, count]) => count > 0);
+    
+    if (usedAbilities.length) {
+      let ul = document.createElement("ul");
+      usedAbilities.forEach(([key, count]) => {
+        let li = document.createElement("li");
+        let nameSpan = document.createElement("span");
+        let countSpan = document.createElement("span");
+        nameSpan.className = "ability-name";
+        countSpan.className = "ability-count";
+        nameSpan.textContent = ABILITIES[key]?.name || key;
+        countSpan.textContent = count;
+        li.appendChild(nameSpan);
+        li.appendChild(countSpan);
+        ul.appendChild(li);
+      });
+      abilityUsageList.innerHTML = "<strong>Použité schopnosti:</strong>";
+      abilityUsageList.appendChild(ul);
     } else {
-        console.log("PC netrafilo nič na", x, y);
+      abilityUsageList.innerHTML = "";
     }
 
-}
+    endgameOverlay.classList.add("show");
+  }
 
-function checkGameEnd(ships, grid) {
-    const allSunk = ships.every(ship => {
-        return ship.every(index => {
-            const cell = grid.children[index];
-            return cell.classList.contains("sunk");
-        });
-    });
+  function hideEndgameOverlay() {
+    endgameOverlay.classList.remove("show");
+  }
 
-    if (allSunk) {
-        endGame(allSunk);
-    }
-}
+  closeEndgameBtn.addEventListener("click", () => {
+    hideEndgameOverlay();
+    resetGame();
+  });
 
-
-function endGame(winner) {
-    gameStarted = false;
-    const message = winner ? 
-        "Gratulujeme! Potopili ste všetky lode počítača!" : 
-        "Bohužiaľ, počítač potopil všetky vaše lode!";
-    
-
-    const gameOverModal = document.createElement("div");
-    gameOverModal.className = "game-over-modal";
-    gameOverModal.innerHTML = `
-        <div class="modal-content">
-            <h2>${message}</h2>
-            <p>Vaše skóre: ${score}</p>
-            <button onclick="restartGame()">Hrať znova</button>
-        </div>
-    `;
-    document.body.appendChild(gameOverModal);
-}
-
-
-function playerShoot(square) {
-    if (!gameStarted || !playerTurn) return;
-    
-    let index = parseInt(square.dataset.index);
-    if (square.classList.contains("hit") || square.classList.contains("miss")) return;
-    
-    if (computerShips.includes(index)) {
-        square.classList.add("hit");
-        square.style.backgroundColor = "red";
-        score += 5;
-        
-        if (isShipSunk(index, computerShips, pcGrid)) {
-            const shipCells = computerShips.filter(pos => {
-                const cell = pcGrid.children[pos];
-                return cell.classList.contains("hit");
-            });
-            
-            shipCells.forEach(pos => {
-                const sunkCell = pcGrid.children[pos];
-                sunkCell.classList.add("sunk");
-                sunkCell.style.backgroundColor = "black";
-            });
-            
-            
-            checkGameEnd([shipCells], pcGrid);
+  let pcHitsStack = [];
+  function addNeighborTargets(row, col) {
+    const neighbors = [
+      [row - 1, col], [row + 1, col], [row, col - 1], [row, col + 1]
+    ];
+    neighbors.forEach(([r, c]) => {
+      if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && !playerBoard[r][c].hit) {
+        if (!pcHitsStack.some(p => p[0] === r && p[1] === c)) {
+          pcHitsStack.push([r, c]);
         }
+      }
+    });
+  }
+
+  function pcMakeMove() {
+    if (gamePhase !== "playing") return;
+
+    let row, col;
+    let shotMade = false;
+
+    if (pcHitsStack.length > 0) {
+      [row, col] = pcHitsStack.shift();
+      shotMade = true;
     } else {
-        square.classList.add("miss");
-        square.style.backgroundColor = "blue";
-        playerTurn = false;
-        setTimeout(computerShoot, 1000);
+      do {
+        row = randint(0, BOARD_SIZE - 1);
+        col = randint(0, BOARD_SIZE - 1);
+      } while (playerBoard[row][col].hit);
+      shotMade = true;
     }
-    
-    scoreBoard.textContent = `Body: ${score}`;
-}
 
+    if (!shotMade) return;
 
-function computerShoot() {
-    let validShots = [...playerGrid.children].filter(cell =>
-        !cell.classList.contains("hit") && 
-        !cell.classList.contains("miss")
-    );
-    
-    if (validShots.length === 0) {
-        endGame(false);
-        return;
+    let hit = applyPlayerShot(row, col);
+
+    if (hit) {
+      addNeighborTargets(row, col);
+      renderBoards();
+
+      if (!checkWin()) {
+        pcMakeMove();
+      }
+    } else {
+      renderBoards();
+      if (!checkWin()) {
+        currentTurn = "player";
+        messageEl.textContent = "Vaša rada na streľbu.";
+      }
     }
-    
-    const randomShot = validShots[Math.floor(Math.random() * validShots.length)];
-    shootCell(randomShot);
-}
+  }
 
-function restartGame() {
-    gameStarted = false;
-    placedShips = [];
-    score = 0;
-    playerTurn = true;
-    createGrid(playerGrid, true);
-    createGrid(pcGrid, false);
-    createShipSelection();
-    scoreBoard.textContent = "Body: 0";
-    startGameButton.disabled = false;
-  
-    const modal = document.querySelector(".game-over-modal");
-    if (modal) {
-        modal.remove();
-    }
-}
+  function endTurn() {
+    if (gamePhase !== "playing") return;
+    if (checkWin()) return;
+    currentTurn = "pc";
+    messageEl.textContent = "Rada počítača...";
+    setTimeout(() => {
+      pcMakeMove();
+    }, 100);
+  }
+
+  boardSizeSelect.addEventListener("change", () => {
+    if (gamePhase !== "setup") return;
+    BOARD_SIZE = parseInt(boardSizeSelect.value);
+    resetGame();
+  });
+
+  resetGame();
+
+})();
