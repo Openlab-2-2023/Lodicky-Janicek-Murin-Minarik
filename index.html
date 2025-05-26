@@ -1,74 +1,50 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lodičky - Hra</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lodky - Battleship</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+<h1><u>BATTLESHIP</u></h1>
+<div id="game-container">
+  <div class="board-container" id="player-container">
+    <h2>JA</h2>
+    <div id="player-board" class="board"></div>
+    <div id="fleet-container" aria-label="Lode na umiestnenie"></div>
+  </div>
 
-<div class="game-container">
-    <h1 class="battleship-title">BATTLESHIP</h1>
-
-    <div id="scoreboard">
-        <p id="score">Body: 0</p>
-    </div>
-
-    <div class="maps">
-        <div class="map-container">
-            <h3>JA</h3> 
-            <div id="playerMap" class="map">
-                <div class="grid" id="playerGrid"></div>
-            </div> 
-        </div>
-        <div class="map-container">
-            <h3>PC</h3> 
-            <div id="pcMap" class="map">
-                <div class="grid" id="pcGrid"></div>
-            </div>
-        </div>
-    </div>
-    
-    <div id="pokyn" class="pokyny-block">
-            <div class="pokyny">
-            <div class="tab-interface">
-                <div class="tab-buttons">
-                    <button class="tab-button active" onclick="openTab('schopnosti')">Schopnosti</button>
-                    <button class="tab-button" onclick="openTab('nastavenia')">Nastavenia</button>
-                </div>
-                
-                <div id="schopnosti" class="tab-content active">
-                    <h4>Schopnosť:</h4>
-                    <ul>
-                        <li>Za 5 bodov máš na strelu 3x3</li>
-                        <li>Za 10 bodov máš strelu cez celý riadok</li>
-                        <li>Za 10 bodov máš strelu cez celý stĺpec</li>
-                        <li>Za 15 bodov máš strelu priečne tabuľkou</li>
-                        <li>Za 150 bodov máš strelu na celú tabuľku</li>
-                    </ul>
-                </div>
-                
-                <div id="nastavenia" class="tab-content">
-                    <div id="controls">
-                        <button id="startGame">Štart</button>
-                        <button id="restartGame">Reštart</button>
-                    </div>
-                    <h4>Môžeš si vybrať obtiažnosť:</h4>
-                    <div class="obtiaznost">
-                        <button>EASY</button>
-                        <button>MEDIUM</button>
-                        <button>HARD</button>
-                    </div>
-                    <button id="rotateDirection">Smer: →</button>
-                    <h3>Výber lodí:</h3>
-                    <div class="grid" id="player2Grid"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+  <div class="board-container" id="pc-container">
+    <h2>PC</h2>
+    <div id="pc-board" class="board"></div>
+  </div>
 </div>
 
+<div id="controls">
+  <label for="board-size">Veľkosť hracej plochy: </label>
+  <select id="board-size">
+    <option value="10" selected>10x10</option>
+    <option value="15">15x15</option>
+  </select>
+  <button id="start-btn" disabled>Začať</button>
+  <button id="restart-btn" disabled>Reštartovať</button>
+  <span id="points">Body: 0</span>
+</div>
+
+<div id="abilities">
+  <button class="ability-btn" id="ability-3x3" disabled>Streľba 3x3 (5 bodov)</button>
+  <button class="ability-btn" id="ability-row" disabled>Streľba Riadok (3 body)</button>
+  <button class="ability-btn" id="ability-col" disabled>Streľba Stĺpec (3 body)</button>
+</div>
+<div id="message"></div>
+
+<div id="endgame-overlay" role="alert" aria-live="assertive">
+  <div id="endgame-message"></div>
+  <div id="ability-usage-list"></div>
+  <button id="close-endgame-btn" aria-label="Zavrieť oznámenie o konci hry">Zavrieť</button>
+</div>
 <script src="script.js"></script>
+
 </body>
 </html>
