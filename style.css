@@ -371,6 +371,10 @@
     transition: background-color 0.3s ease;
     user-select: none;
   }
+.cell.sunk {
+    background-color: purple; /* Change this to your desired color */
+    box-shadow: inset 0 0 8px #9d70fa;
+}
 
   #endgame-overlay button:hover {
     background-color: #6b21a8;
