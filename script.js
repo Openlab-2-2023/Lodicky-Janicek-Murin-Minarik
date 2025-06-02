@@ -733,41 +733,38 @@
   }
 
   function pcMakeMove() {
-    if (gamePhase !== "playing") return;
+  if (gamePhase !== "playing") return;
 
-    let row, col;
-    let shotMade = false;
+  let row, col;
+  let shotMade = false;
 
-    if (pcHitsStack.length > 0) {
-      [row, col] = pcHitsStack.shift();
-      shotMade = true;
-    } else {
-      do {
-        row = randint(0, BOARD_SIZE - 1);
-        col = randint(0, BOARD_SIZE - 1);
-      } while (playerBoard[row][col].hit);
-      shotMade = true;
-    }
-
-    if (!shotMade) return;
-
-    let hit = applyPlayerShot(row, col);
-
-    if (hit) {
-      addNeighborTargets(row, col);
-      renderBoards();
-
-      if (!checkWin()) {
-        pcMakeMove();
-      }
-    } else {
-      renderBoards();
-      if (!checkWin()) {
-        currentTurn = "player";
-        messageEl.textContent = "Vaša rada na streľbu.";
-      }
-    }
+  if (pcHitsStack.length > 0) {
+    [row, col] = pcHitsStack.shift();
+    shotMade = true;
+  } else {
+    do {
+      row = randint(0, BOARD_SIZE - 1);
+      col = randint(0, BOARD_SIZE - 1);
+    } while (playerBoard[row][col].hit);
+    shotMade = true;
   }
+
+  if (!shotMade) return;
+
+  let hit = applyPlayerShot(row, col);
+
+  if (hit) {
+    addNeighborTargets(row, col);
+  }
+
+  renderBoards();
+
+  if (!checkWin()) {
+    currentTurn = "player";
+    messageEl.textContent = "Vaša rada na streľbu.";
+  }
+}
+
 
   function endTurn() {
     if (gamePhase !== "playing") return;
